@@ -72,8 +72,7 @@ void jogo_iniciar() {
   pinMode(PINO_BOTAO, INPUT_PULLUP);
   pinMode(PINO_LASER, OUTPUT);
   digitalWrite(PINO_LASER, LOW);
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH); // HIGH = apagado (active LOW no NodeMCU)
+  // LED_BUILTIN já inicializado em setup() — não redefinir aqui
 
   #ifdef PINO_LED_BOTAO
     pinMode(PINO_LED_BOTAO, OUTPUT);

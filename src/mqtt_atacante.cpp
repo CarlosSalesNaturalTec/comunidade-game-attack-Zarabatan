@@ -53,7 +53,7 @@ void mqtt_iniciar() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(SSID_DA_REDE, SENHA_DA_REDE);
 
-  constexpr unsigned long TIMEOUT_WIFI_MS = 10000; // 10 segundos
+  constexpr unsigned long TIMEOUT_WIFI_MS = 5000; // 5 segundos
   unsigned long inicio = millis();
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -62,11 +62,14 @@ void mqtt_iniciar() {
       Serial.println("[MQTT] Wi-Fi nao encontrado — MODO OFFLINE ativado.");
       Serial.println("[MQTT] Partida sera iniciada automaticamente.");
       Serial.println("[MQTT] Reconexao automatica sera tentada no loop().");
-      return;   // sai sem bloquear — o hardware já está pronto para uso
+      digitalWrite(LED_BUILTIN, LOW);  // reacende: setup ainda em andamento
+      return;
     }
     delay(500);
+    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN)); // pisca: "buscando Wi-Fi"
     Serial.print(".");
   }
+  digitalWrite(LED_BUILTIN, LOW);   // sólido: Wi-Fi conectado
 
   Serial.print(" OK! IP: ");
   Serial.println(WiFi.localIP());

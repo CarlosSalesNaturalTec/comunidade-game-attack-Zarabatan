@@ -33,8 +33,12 @@ void setup() {
   Serial.println("   Comunidade Game - Projeto de Inclusão Digital");
   Serial.println("=================================================");
 
+  // LED interno: indica inicialização desde o início
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);   // acende: "estou inicializando"
+
   buzzer_iniciar();   // configura o pino e testa o buzzer
-  mqtt_iniciar();     // conecta ao Wi-Fi e ao broker MQTT
+  mqtt_iniciar();     // conecta ao Wi-Fi e ao broker MQTT (pisca durante busca)
   jogo_iniciar();     // configura botão, laser e estado inicial
 
   // Modo offline: sem broker disponível, inicia a partida imediatamente
@@ -45,6 +49,12 @@ void setup() {
     Serial.println("[SETUP] Pronto! Aguardando START do Nexus...");
   }
   Serial.println();
+
+  // 3 blinks rápidos: "pronto para uso"
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(LED_BUILTIN, LOW);  delay(100);
+    digitalWrite(LED_BUILTIN, HIGH); delay(100);
+  }
 }
 
 void loop() {
