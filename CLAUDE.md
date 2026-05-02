@@ -57,8 +57,20 @@ The firmware handles offline gracefully — if Wi-Fi/broker is unreachable, butt
 ### Stamina System
 
 - Max: 100%, cost per shot: 20% (5 shots per cycle)
-- Overheat when stamina reaches 0 → 3-second auto-recharge timer
+- Overheat when stamina reaches 0 → 10-second auto-recharge timer
 - Buzzer feedback intensity increases as stamina decreases (1 beep → 2 beeps → 3 beeps)
+
+### LED Visual Indicators (`LED_BUILTIN` — D4, active LOW on NodeMCU)
+
+| Phase | LED behavior | Meaning |
+|-------|-------------|---------|
+| Boot → end of setup | Solid ON | Initializing |
+| Wi-Fi search (up to 5 s) | Blinks at 1 Hz | Searching for network |
+| Wi-Fi connected | Solid ON | Connecting to broker |
+| Ready to fire | 3 rapid blinks → OFF | Ready |
+| Overheated (recharging) | Blinks accelerating (800 ms → 100 ms) | Recharge in progress |
+
+`LED_BUILTIN` is initialized in `setup()` before `mqtt_iniciar()` so it is available during the Wi-Fi search phase.
 
 ## Key Configuration (`src/config.h`)
 

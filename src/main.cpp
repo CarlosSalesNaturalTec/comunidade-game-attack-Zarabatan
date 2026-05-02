@@ -21,7 +21,7 @@
 //     21–40%  → 2 bips (aviso)
 //     1–20%   → 3 bips (crítico!)
 //   Com stamina 0% → arma SUPERAQUECE: alarme + laser bloqueado.
-//   Após 3 segundos → recarga automática + melodia de pronto.
+//   Após 10 segundos → recarga automática + melodia de pronto.
 //   A stamina é publicada via MQTT a cada tiro e a cada recarga.
 // ==========================================================
 
