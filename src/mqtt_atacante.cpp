@@ -38,29 +38,61 @@ static void aoReceberMensagem(char* topico, byte* payload, unsigned int tamanho)
 
 // ─────────────────────────────────────────────────────
 void mqtt_iniciar() {
-  // ── 1. Conectar ao Wi-Fi ──────────────────────────
-  Serial.print("[MQTT] Conectando ao Wi-Fi '");
-  Serial.print(SSID_DA_REDE);
-  Serial.print("'");
-
-  WiFi.begin(SSID_DA_REDE, SENHA_DA_REDE);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.print(" OK! IP: ");
-  Serial.println(WiFi.localIP());
-
-  // ── 2. Configurar o broker MQTT ───────────────────
+  // ── 1. Configurar broker e callback (independe do Wi-Fi) ──
   _mqtt.setServer(IP_DO_BROKER, PORTA_MQTT);
   _mqtt.setCallback(aoReceberMensagem);
 
+  // ── 2. Tentar conectar ao Wi-Fi com timeout ────────
+  //    Se a rede não estiver disponível em 10s, a arma
+  //    entra em MODO OFFLINE: botão e laser funcionam
+  //    normalmente. O loop() tentará reconectar depois.
+  Serial.print("[MQTT] Conectando ao Wi-Fi '");
+  Serial.print(SSID_DA_REDE);
+  Serial.print("' (timeout: 10s)");
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(SSID_DA_REDE, SENHA_DA_REDE);
+
+  constexpr unsigned long TIMEOUT_WIFI_MS = 10000; // 10 segundos
+  unsigned long inicio = millis();
+
+  while (WiFi.status() != WL_CONNECTED) {
+    if (millis() - inicio >= TIMEOUT_WIFI_MS) {
+      Serial.println();
+      Serial.println("[MQTT] Wi-Fi nao encontrado — MODO OFFLINE ativado.");
+      Serial.println("[MQTT] A arma funciona normalmente.");
+      Serial.println("[MQTT] Reconexao automatica sera tentada no loop().");
+      return;   // sai sem bloquear — o hardware já está pronto para uso
+    }
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.print(" OK! IP: ");
+  Serial.println(WiFi.localIP());
+
+  // ── 3. Conectar ao broker MQTT ────────────────────
   mqtt_reconectar();
 }
 
 void mqtt_reconectar() {
   if (_mqtt.connected()) return;
 
+  // ── Sem Wi-Fi → tenta reconectar a rede primeiro ──
+  //    Usa uma única tentativa não-bloqueante (sem while).
+  //    O loop() chamará mqtt_reconectar() de novo no próximo ciclo.
+  if (WiFi.status() != WL_CONNECTED) {
+    static unsigned long _ultimaTentativaWifi = 0;
+    if (millis() - _ultimaTentativaWifi < 5000) return; // espera 5s entre tentativas
+    _ultimaTentativaWifi = millis();
+
+    Serial.println("[MQTT] Wi-Fi desconectado. Tentando reconectar...");
+    WiFi.disconnect();
+    WiFi.begin(SSID_DA_REDE, SENHA_DA_REDE);
+    return;  // retorna — não trava o loop()
+  }
+
+  // ── Wi-Fi OK → tenta o broker MQTT ───────────────
   Serial.print("[MQTT] Conectando ao broker...");
 
   if (_mqtt.connect(ID_MQTT)) {
