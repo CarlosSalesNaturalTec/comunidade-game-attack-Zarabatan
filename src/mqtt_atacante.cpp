@@ -1,0 +1,105 @@
+#include "mqtt_atacante.h"
+#include "jogo_atacante.h"
+#include "config.h"
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+#include <ArduinoJson.h>
+
+// ── Objetos de rede (privados) ────────────────────────
+static WiFiClient   _wifi;
+static PubSubClient _mqtt(_wifi);
+
+// ─────────────────────────────────────────────────────
+// CALLBACK: chamado automaticamente ao receber mensagem
+// ─────────────────────────────────────────────────────
+static void aoReceberMensagem(char* topico, byte* payload, unsigned int tamanho) {
+  char mensagem[tamanho + 1];
+  memcpy(mensagem, payload, tamanho);
+  mensagem[tamanho] = '\0';
+
+  Serial.print("[MQTT] Mensagem em '");
+  Serial.print(topico);
+  Serial.print("': ");
+  Serial.println(mensagem);
+
+  if (String(topico) == TOPICO_COMANDO) {
+    StaticJsonDocument<64> doc;
+    if (deserializeJson(doc, mensagem) != DeserializationError::Ok) return;
+
+    const char* cmd = doc["cmd"] | "";
+
+    if (strcmp(cmd, "START") == 0) {
+      Serial.println("[MQTT] → Comando START recebido!");
+      jogo_iniciarPartida();
+    }
+    // Futuros comandos (PAUSE, STOP, RESET) podem ser adicionados aqui
+  }
+}
+
+// ─────────────────────────────────────────────────────
+void mqtt_iniciar() {
+  // ── 1. Conectar ao Wi-Fi ──────────────────────────
+  Serial.print("[MQTT] Conectando ao Wi-Fi '");
+  Serial.print(SSID_DA_REDE);
+  Serial.print("'");
+
+  WiFi.begin(SSID_DA_REDE, SENHA_DA_REDE);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.print(" OK! IP: ");
+  Serial.println(WiFi.localIP());
+
+  // ── 2. Configurar o broker MQTT ───────────────────
+  _mqtt.setServer(IP_DO_BROKER, PORTA_MQTT);
+  _mqtt.setCallback(aoReceberMensagem);
+
+  mqtt_reconectar();
+}
+
+void mqtt_reconectar() {
+  if (_mqtt.connected()) return;
+
+  Serial.print("[MQTT] Conectando ao broker...");
+
+  if (_mqtt.connect(ID_MQTT)) {
+    Serial.println(" Conectado!");
+    _mqtt.subscribe(TOPICO_COMANDO);
+    Serial.print("[MQTT] Assinando: ");
+    Serial.println(TOPICO_COMANDO);
+
+    // Republicar stamina atual ao reconectar — mantém o Nexus sincronizado
+    const char* status = (jogo_getEstado() == ARMA_SUPERAQUECIDA)
+                         ? "superaquecido" : "ativo";
+    mqtt_publicarStamina(jogo_getStamina(), status);
+
+  } else {
+    Serial.print(" Falhou! Codigo MQTT: ");
+    Serial.println(_mqtt.state());
+  }
+}
+
+bool mqtt_conectado() {
+  return _mqtt.connected();
+}
+
+void mqtt_processar() {
+  _mqtt.loop();
+}
+
+// ─────────────────────────────────────────────────────
+void mqtt_publicarStamina(int stamina, const char* status) {
+  // Monta: {"stamina": 80, "status": "ativo"}
+  StaticJsonDocument<96> doc;
+  doc["stamina"] = stamina;
+  doc["status"]  = status;
+
+  char payload[96];
+  serializeJson(doc, payload);
+
+  _mqtt.publish(TOPICO_STAMINA, payload);
+
+  Serial.print("[MQTT] Publicou stamina: ");
+  Serial.println(payload);
+}
