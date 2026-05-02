@@ -13,6 +13,10 @@ static bool          _estadoAnterior  = HIGH;  // HIGH = solto (pull-up)
 static bool          _estadoEstavel   = HIGH;
 static unsigned long _ultimoDebounceMs = 0;
 
+// ── LED interno durante recarga ──
+static unsigned long _ultimoBlinkMs   = 0;
+static bool          _ledBlink        = false;
+
 // ─────────────────────────────────────────────────────
 // FUNÇÕES INTERNAS (privadas)
 // ─────────────────────────────────────────────────────
@@ -68,6 +72,8 @@ void jogo_iniciar() {
   pinMode(PINO_BOTAO, INPUT_PULLUP);
   pinMode(PINO_LASER, OUTPUT);
   digitalWrite(PINO_LASER, LOW);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH); // HIGH = apagado (active LOW no NodeMCU)
 
   #ifdef PINO_LED_BOTAO
     pinMode(PINO_LED_BOTAO, OUTPUT);
@@ -87,6 +93,7 @@ void jogo_iniciarPartida() {
   _estadoAnterior  = HIGH;
   _inicioRecargaMs = 0;
 
+  digitalWrite(LED_BUILTIN, HIGH); // garante LED apagado
   laserDesligar();
 
   Serial.println("[JOGO] *** PARTIDA INICIADA! Arma pronta para atirar. ***");
@@ -144,8 +151,22 @@ void jogo_verificarBotao() {
 void jogo_verificarRecarga() {
   if (_estado != ARMA_SUPERAQUECIDA) return;
 
-  if ((millis() - _inicioRecargaMs) >= TEMPO_RECARGA_MS) {
+  unsigned long agora   = millis();
+  unsigned long elapsed = agora - _inicioRecargaMs;
+
+  // ── LED interno pisca com velocidade crescente (indica progresso) ──
+  // Começa lento (800 ms/ciclo) e acelera até rápido (100 ms/ciclo)
+  unsigned long progresso = min(elapsed, (unsigned long)TEMPO_RECARGA_MS);
+  long intervalo = map((long)progresso, 0L, (long)TEMPO_RECARGA_MS, 800L, 100L);
+  if (agora - _ultimoBlinkMs >= (unsigned long)intervalo) {
+    _ultimoBlinkMs = agora;
+    _ledBlink = !_ledBlink;
+    digitalWrite(LED_BUILTIN, _ledBlink ? LOW : HIGH); // active LOW
+  }
+
+  if (elapsed >= TEMPO_RECARGA_MS) {
     // Recarga completa!
+    digitalWrite(LED_BUILTIN, HIGH); // apaga LED
     _stamina = STAMINA_MAXIMA;
     _estado  = ARMA_PRONTA;
 

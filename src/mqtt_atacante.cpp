@@ -60,7 +60,7 @@ void mqtt_iniciar() {
     if (millis() - inicio >= TIMEOUT_WIFI_MS) {
       Serial.println();
       Serial.println("[MQTT] Wi-Fi nao encontrado — MODO OFFLINE ativado.");
-      Serial.println("[MQTT] A arma funciona normalmente.");
+      Serial.println("[MQTT] Partida sera iniciada automaticamente.");
       Serial.println("[MQTT] Reconexao automatica sera tentada no loop().");
       return;   // sai sem bloquear — o hardware já está pronto para uso
     }

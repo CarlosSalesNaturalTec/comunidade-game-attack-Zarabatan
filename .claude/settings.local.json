@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Path 'C:\\\\Users\\\\causa\\\\OneDrive\\\\Documentos\\\\PlatformIO\\\\Projects\\\\attack-Zarabatan' -Recurse -File | Select-Object @{Name=\"Path\"; Expression={$_.FullName}} | Format-Table -AutoSize)"
+    ]
+  }
+}

@@ -37,7 +37,13 @@ void setup() {
   mqtt_iniciar();     // conecta ao Wi-Fi e ao broker MQTT
   jogo_iniciar();     // configura botão, laser e estado inicial
 
-  Serial.println("[SETUP] Pronto! Aguardando START do Nexus...");
+  // Modo offline: sem broker disponível, inicia a partida imediatamente
+  if (!mqtt_conectado()) {
+    jogo_iniciarPartida();
+    Serial.println("[SETUP] Pronto! (modo offline — arma ativa)");
+  } else {
+    Serial.println("[SETUP] Pronto! Aguardando START do Nexus...");
+  }
   Serial.println();
 }
 

@@ -32,7 +32,7 @@
 // ── Parâmetros do Jogo ────────────────────────────────
 #define STAMINA_MAXIMA     100  // energia inicial em % (publicada no MQTT)
 #define CUSTO_POR_TIRO     20   // % gasta por tiro — 20% = 5 tiros antes de superaquecer
-#define TEMPO_RECARGA_MS   3000 // tempo de recarga: 3 segundos
+#define TEMPO_RECARGA_MS   10000 // tempo de recarga: 10 segundos
 
 // ── Debounce do Botão ─────────────────────────────────
 //    Muito baixo → duplo acionamento | Muito alto → resposta lenta
