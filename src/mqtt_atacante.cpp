@@ -95,8 +95,14 @@ void mqtt_reconectar() {
     return;  // retorna — não trava o loop()
   }
 
-  // ── Wi-Fi OK → tenta o broker MQTT ───────────────
-  Serial.print("[MQTT] Conectando ao broker...");
+  // ── Wi-Fi OK → tenta o broker MQTT (máx 1 vez a cada 5s) ───────────────
+  static unsigned long _ultimaTentativaMqtt = 0;
+  if (millis() - _ultimaTentativaMqtt < 5000) return;
+  _ultimaTentativaMqtt = millis();
+
+  Serial.print("[MQTT] Conectando ao broker " IP_DO_BROKER ":" );
+  Serial.print(PORTA_MQTT);
+  Serial.print("...");
 
   if (_mqtt.connect(ID_MQTT)) {
     Serial.println(" Conectado!");
